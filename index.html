@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Heikin Ashi RSI Crypto Trader</title>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      background: #1a1a1a;
+      color: #e5e5e5;
+      font-family: 'Arial', sans-serif;
+      min-height: 100vh;
+    }
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #00d4ff, #00ff88);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+      background: #262626;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    select, input {
+      background: #1a1a1a;
+      color: #e5e5e5;
+      border: 2px solid #404040;
+      border-radius: 6px;
+      padding: 8px 12px;
+      transition: all 0.3s ease;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+    input[type="checkbox"] {
+      transform: scale(1.2);
+      accent-color: #00ff88;
+    }
+    input[type="range"] {
+      accent-color: #00d4ff;
+    }
+    .rsi-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #1a1a1a;
+      border: 1px solid #404040;
+    }
+    .rsi-value {
+      font-weight: bold;
+      min-width: 40px;
+    }
+    .rsi-overbought { color: #ff4444; }
+    .rsi-oversold { color: #00ff88; }
+    .rsi-neutral { color: #ffd43b; }
+    .timeframe-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .timeframe-btn {
+      background: #333;
+      color: #e5e5e5;
+      border: 2px solid #404040;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    .timeframe-btn:hover {
+      background: #404040;
+      border-color: #00d4ff;
+    }
+    .timeframe-btn.active {
+      background: linear-gradient(45deg, #00d4ff, #00ff88);
+      color: #1a1a1a;
+      border-color: transparent;
+      font-weight: bold;
+    }
+    .charts-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .chart-wrapper {
+      background: #262626;
+      border-radius: 12px;
+      border: 1px solid #333;
+      overflow: hidden;
+      position: relative;
+      height: 600px;
+    }
+    .main-chart {
+      height: 70%;
+      border-bottom: 1px solid #333;
+    }
+    .rsi-chart {
+      height: 30%;
+    }
+    .chart-title {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 10;
+      background: rgba(26, 26, 26, 0.9);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #00d4ff;
+      border: 1px solid #404040;
+    }
+    .rsi-title {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      z-index: 10;
+      background: rgba(26, 26, 26, 0.9);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffd43b;
+      border: 1px solid #404040;
+    }
+    .chart {
+      width: 100%;
+      height: 100%;
+    }
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(26, 26, 26, 0.95);
+      color: #e5e5e5;
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: none;
+      z-index: 20;
+      border: 1px solid #404040;
+      max-width: 300px;
+    }
+    .info-sections {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .alert-history, .descriptions {
+      background: #262626;
+      border-radius: 12px;
+      border: 1px solid #333;
+      padding: 20px;
+    }
+    .alert-history h3, .descriptions h3 {
+      margin-top: 0;
+      color: #00d4ff;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .alert-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+    }
+    .alert-item {
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #1a1a1a;
+      border-left: 4px solid transparent;
+    }
+    .alert-item.buy {
+      border-left-color: #00ff88;
+      color: #00ff88;
+    }
+    .alert-item.sell {
+      border-left-color: #ff4444;
+      color: #ff4444;
+    }
+    .clear-alerts {
+      background: #404040;
+      color: #e5e5e5;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    .clear-alerts:hover {
+      background: #505050;
+    }
+    .status-indicators {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #1a1a1a;
+    }
+    .status-indicator.online { color: #00ff88; }
+    .status-indicator.offline { color: #ff4444; }
+    .status-indicator.loading { color: #00d4ff; }
+    .error-message {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid #ff4444;
+      color: #ff4444;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 14px;
+      display: none;
+    }
+    .pattern-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      margin-right: 10px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .descriptions ul, .descriptions ol {
+      line-height: 1.6;
+    }
+    .descriptions li {
+      margin-bottom: 8px;
+    }
+    .pattern-highlight {
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    .red-doji { background: rgba(255, 68, 68, 0.2); color: #ff6b6b; }
+    .green-doji { background: rgba(0, 255, 136, 0.2); color: #51cf66; }
+    .reversal-marker { background: rgba(255, 255, 0, 0.2); color: #ffd43b; }
+    .wickless-marker { background: rgba(255, 153, 0, 0.2); color: #ff922b; }
+    .rsi-signal { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
+
+    @media (max-width: 768px) {
+      .info-sections {
+        grid-template-columns: 1fr;
+      }
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .chart-wrapper {
+        height: 500px;
+      }
+    }
+
+    /* Loading animation */
+    .loading-spinner {
+      border: 3px solid #404040;
+      border-top: 3px solid #00d4ff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Scrollbar styling for better PDF export */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #404040;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #505050;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <h1><i class="fas fa-chart-candlestick mr-2"></i>Enhanced Heikin Ashi RSI Crypto Trader</h1>
+    
+    <div id="error-display" class="error-message">
+      <i class="fas fa-exclamation-triangle mr-2"></i>
+      <span id="error-text"></span>
+    </div>
+    
+    <div class="controls-grid">
+      <div class="control-group">
+        <label for="crypto-select">
+          <i class="fas fa-coins"></i>
+          Cryptocurrency:
+        </label>
+        <select id="crypto-select">
+          <option value="BTCUSDT">BTC/USDT</option>
+          <option value="ETHUSDT">ETH/USDT</option>
+          <option value="SOLUSDT">SOL/USDT</option>
+          <option value="ADAUSDT">ADA/USDT</option>
+          <option value="BNBUSDT">BNB/USDT</option>
+          <option value="UNIUSDT">UNI/USDT</option>
+          <option value="XRPUSDT">XRP/USDT</option>
+          <option value="DOGEUSDT">DOGE/USDT</option>
+          <option value="LINKUSDT">LINK/USDT</option>
+          <option value="MATICUSDT">MATIC/USDT</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="pattern-select">
+          <i class="fas fa-search"></i>
+          Patterns:
+        </label>
+        <select id="pattern-select" multiple size="5">
+          <option value="doji" selected>Doji Candles</option>
+          <option value="wickless" selected>Wickless Candles</option>
+          <option value="reversal" selected>Trend Reversals</option>
+          <option value="zones" selected>Support/Resistance</option>
+          <option value="trend" selected>Trend Strength</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>
+          <input type="checkbox" id="enable-alerts" checked>
+          <i class="fas fa-bell"></i>
+          Enable RSI+Doji Alerts
+        </label>
+        <div class="rsi-indicator">
+          <i class="fas fa-chart-line"></i>
+          <span>RSI(7):</span>
+          <span id="rsi-value" class="rsi-value rsi-neutral">--</span>
+        </div>
+        <label>
+          <i class="fas fa-volume-up"></i>
+          Volume Filter: 
+          <input type="range" min="0" max="10000" step="100" id="volume-filter" value="0">
+          <span id="volume-value" class="ml-2 text-green-400 font-bold">0</span>
+        </label>
+      </div>
+      
+      <div class="control-group">
+        <label>
+          <i class="fas fa-cog"></i>
+          RSI Settings:
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+          <div>
+            <label style="font-size: 11px;">Length: <input type="number" id="rsi-length" value="7" min="2" max="50" style="width: 60px; padding: 4px;"></label>
+          </div>
+          <div>
+            <label style="font-size: 11px;">Smoothing: <input type="number" id="rsi-smoothing" value="21" min="1" max="50" style="width: 60px; padding: 4px;"></label>
+          </div>
+          <div>
+            <label style="font-size: 11px;">Overbought: <input type="number" id="rsi-overbought" value="70" min="50" max="90" style="width: 60px; padding: 4px;"></label>
+          </div>
+          <div>
+            <label style="font-size: 11px;">Oversold: <input type="number" id="rsi-oversold" value="30" min="10" max="50" style="width: 60px; padding: 4px;"></label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label>
+          <i class="fas fa-clock"></i>
+          Auto Refresh:
+        </label>
+        <div class="status-indicators">
+          <div id="connection-status" class="status-indicator online">
+            <i class="fas fa-wifi"></i>
+            <span>Online</span>
+          </div>
+          <div id="refresh-status" class="status-indicator">
+            <i class="fas fa-sync"></i>
+            <span>Next: <span id="next-refresh">-</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="timeframe-selector">
+      <button class="timeframe-btn" data-tf="1m">1m</button>
+      <button class="timeframe-btn" data-tf="5m">5m</button>
+      <button class="timeframe-btn active" data-tf="15m">15m</button>
+      <button class="timeframe-btn" data-tf="30m">30m</button>
+      <button class="timeframe-btn" data-tf="1h">1h</button>
+      <button class="timeframe-btn" data-tf="4h">4h</button>
+      <button class="timeframe-btn" data-tf="1d">1d</button>
+    </div>
+    
+    <div class="pattern-legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background: #44ff44;"></div>
+        <span>Green Doji</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ff4444;"></div>
+        <span>Red Doji</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ff9900;"></div>
+        <span>Wickless</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ffff00;"></div>
+        <span>Reversal</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: rgba(255,255,255,0.3);"></div>
+        <span>Support/Resistance</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ffd700;"></div>
+        <span>RSI+Doji Signal</span>
+      </div>
+    </div>
+    
+    <div class="charts-container" id="chart-container"></div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <div class="info-sections">
+      <div class="alert-history">
+        <h3><i class="fas fa-history mr-2"></i>RSI+Doji Alert History</h3>
+        <div id="alert-list" class="alert-list"></div>
+        <button id="clear-alerts" class="clear-alerts">
+          <i class="fas fa-trash mr-2"></i>Clear Alerts
+        </button>
+      </div>
+      
+      <div class="descriptions">
+        <h3><i class="fas fa-info-circle mr-2"></i>Enhanced Trading Guide</h3>
+        <div class="space-y-4">
+          <div>
+            <h4 class="font-bold mb-2">RSI+Doji Strategy</h4>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+              <li><span class="pattern-highlight rsi-signal">RSI Oversold + Green Doji</span>: Strong bullish reversal signal (RSI < 30)</li>
+              <li><span class="pattern-highlight rsi-signal">RSI Overbought + Red Doji</span>: Strong bearish reversal signal (RSI > 70)</li>
+              <li>RSI(7) with 21-period smoothing for optimal signal quality</li>
+              <li>Alerts only trigger when BOTH conditions are met simultaneously</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 class="font-bold mb-2">Heikin Ashi Patterns</h4>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+              <li><span class="pattern-highlight red-doji">Red Doji</span>: Small body, close below open. Potential bearish reversal in uptrends.</li>
+              <li><span class="pattern-highlight green-doji">Green Doji</span>: Small body, close above open. Potential bullish reversal in downtrends.</li>
+              <li><span class="pattern-highlight wickless-marker">Wickless Candles</span>: Strong directional momentum indicators.</li>
+              <li><span class="pattern-highlight reversal-marker">Reversal Points</span>: Color changes after strong trends signal potential reversals.</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 class="font-bold mb-2">Enhanced Trading Rules</h4>
+            <ol class="list-decimal list-inside space-y-1 text-sm">
+              <li>Wait for RSI to reach extreme levels (>70 overbought, <30 oversold)</li>
+              <li>Confirm with Doji candle formation on Heikin Ashi chart</li>
+              <li>Enter trades only when both RSI and Doji conditions align</li>
+              <li>Use higher timeframes for trend confirmation</li>
+              <li>Respect support/resistance levels for better entries</li>
+              <li>Set stop losses beyond recent swing points</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Error handling utilities
+    class ErrorHandler {
+      static showError(message, duration = 5000) {
+        try {
+          const errorDisplay = document.getElementById('error-display');
+          const errorText = document.getElementById('error-text');
+          
+          if (errorDisplay && errorText) {
+            errorText.textContent = message;
+            errorDisplay.style.display = 'block';
+            
+            setTimeout(() => {
+              if (errorDisplay) {
+                errorDisplay.style.display = 'none';
+              }
+            }, duration);
+          }
+          
+          console.error('Application Error:', message);
+        } catch (e) {
+          console.error('Error displaying error:', e);
+        }
+      }
+      
+      static logError(context, error) {
+        const message = `${context}: ${error.message || error}`;
+        console.error(message, error);
+        this.showError(message);
+      }
+      
+      static safeExecute(fn, context = 'Unknown operation', defaultReturn = null) {
+        try {
+          return fn();
+        } catch (error) {
+          this.logError(context, error);
+          return defaultReturn;
+        }
+      }
+      
+      static async safeExecuteAsync(fn, context = 'Unknown async operation', defaultReturn = null) {
+        try {
+          return await fn();
+        } catch (error) {
+          this.logError(context, error);
+          return defaultReturn;
+        }
+      }
+    }
+
+    // Safe DOM utilities
+    class SafeDOM {
+      static getElementById(id) {
+        try {
+          return document.getElementById(id);
+        } catch (error) {
+          ErrorHandler.logError(`Getting element ${id}`, error);
+          return null;
+        }
+      }
+      
+      static addEventListener(element, event, handler) {
+        return ErrorHandler.safeExecute(() => {
+          if (element && typeof handler === 'function') {
+            element.addEventListener(event, (e) => {
+              ErrorHandler.safeExecute(() => handler(e), `Event handler for ${event}`);
+            });
+          }
+        }, `Adding event listener for ${event}`);
+      }
+      
+      static querySelector(selector) {
+        return ErrorHandler.safeExecute(() => {
+          return document.querySelector(selector);
+        }, `Querying selector ${selector}`);
+      }
+      
+      static querySelectorAll(selector) {
+        return ErrorHandler.safeExecute(() => {
+          return document.querySelectorAll(selector) || [];
+        }, `Querying all selectors ${selector}`, []);
+      }
+    }
+
+    // Safe storage utilities
+    class SafeStorage {
+      static get(key, defaultValue = null) {
+        return ErrorHandler.safeExecute(() => {
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : defaultValue;
+        }, `Getting localStorage ${key}`, defaultValue);
+      }
+      
+      static set(key, value) {
+        return ErrorHandler.safeExecute(() => {
+          localStorage.setItem(key, JSON.stringify(value));
+          return true;
+        }, `Setting localStorage ${key}`, false);
+      }
+    }
+
+    // Application state
+    const AppState = {
+      activeCharts: {},
+      currentTimeframe: '15m',
+      currentSymbol: 'BTCUSDT',
+      alerts: SafeStorage.get('heikinAshiRsiAlerts', []),
+      refreshInterval: null,
+      lastRefreshTime: Date.now(),
+      connectionStatus: 'online',
+      isLoading: false,
+      currentRSI: null,
+      rsiData: [],
+      lastAlertTime: 0, // Track last alert time for cooldown
+      
+      timeframeRefreshRates: {
+        '1m': 30000,    // 30 seconds
+        '5m': 60000,    // 1 minute
+        '15m': 120000,  // 2 minutes
+        '30m': 180000,  // 3 minutes
+        '1h': 300000,   // 5 minutes
+        '4h': 900000,   // 15 minutes
+        '1d': 3600000   // 1 hour
+      }
+    };
+
+    // RSI Calculator
+    class RSICalculator {
+      static calculate(prices, period = 7, smoothingPeriod = 21) {
+        return ErrorHandler.safeExecute(() => {
+          if (!prices || prices.length < period + smoothingPeriod) return [];
+          
+          const rsiValues = [];
+          const gains = [];
+          const losses = [];
+          
+          // Calculate price changes
+          for (let i = 1; i < prices.length; i++) {
+            const change = prices[i] - prices[i - 1];
+            gains.push(change > 0 ? change : 0);
+            losses.push(change < 0 ? Math.abs(change) : 0);
+          }
+          
+          // Calculate initial RSI values
+          for (let i = period - 1; i < gains.length; i++) {
+            const avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+            const avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+            
+            const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+            const rsi = 100 - (100 / (1 + rs));
+            rsiValues.push(rsi);
+          }
+          
+          // Apply smoothing if specified
+          if (smoothingPeriod > 1 && rsiValues.length >= smoothingPeriod) {
+            const smoothedRSI = [];
+            for (let i = smoothingPeriod - 1; i < rsiValues.length; i++) {
+              const sum = rsiValues.slice(i - smoothingPeriod + 1, i + 1).reduce((a, b) => a + b, 0);
+              smoothedRSI.push(sum / smoothingPeriod);
+            }
+            return smoothedRSI;
+          }
+          
+          return rsiValues;
+        }, 'Calculating RSI', []);
+      }
+      
+      static isOverbought(rsi, threshold = 70) {
+        return rsi > threshold;
+      }
+      
+      static isOversold(rsi, threshold = 30) {
+        return rsi < threshold;
+      }
+    }
+
+    // Initialize DOM elements safely
+    const elements = {
+      chartContainer: SafeDOM.getElementById('chart-container'),
+      tooltipEl: SafeDOM.getElementById('tooltip'),
+      volumeFilterInput: SafeDOM.getElementById('volume-filter'),
+      volumeDisplay: SafeDOM.getElementById('volume-value'),
+      cryptoSelect: SafeDOM.getElementById('crypto-select'),
+      patternSelect: SafeDOM.getElementById('pattern-select'),
+      alertList: SafeDOM.getElementById('alert-list'),
+      clearAlertsBtn: SafeDOM.getElementById('clear-alerts'),
+      nextRefreshEl: SafeDOM.getElementById('next-refresh'),
+      connectionStatus: SafeDOM.getElementById('connection-status'),
+      enableAlertsCheckbox: SafeDOM.getElementById('enable-alerts'),
+      rsiValueEl: SafeDOM.getElementById('rsi-value'),
+      rsiLengthInput: SafeDOM.getElementById('rsi-length'),
+      rsiSmoothingInput: SafeDOM.getElementById('rsi-smoothing'),
+      rsiOverboughtInput: SafeDOM.getElementById('rsi-overbought'),
+      rsiOversoldInput: SafeDOM.getElementById('rsi-oversold')
+    };
+
+    // Alert management
+    class AlertManager {
+      static render() {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.alertList) return;
+          
+          elements.alertList.innerHTML = '';
+          const alertsToShow = AppState.alerts.slice().reverse().slice(0, 50); // Show last 50 alerts
+          
+          alertsToShow.forEach(alert => {
+            const alertEl = document.createElement('div');
+            alertEl.className = `alert-item ${alert.type}`;
+            
+            const timeStr = new Date(alert.time).toLocaleString();
+            const icon = alert.type === 'buy' ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+            
+            alertEl.innerHTML = `
+              <i class="${icon}"></i>
+              [${timeStr}] ${alert.message}
+            `;
+            
+            elements.alertList.appendChild(alertEl);
+          });
+        }, 'Rendering alerts');
+      }
+      
+      static add(type, message) {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.enableAlertsCheckbox?.checked) return;
+          
+          // Check if we're in cooldown period (10 seconds)
+          const now = Date.now();
+          if (now - AppState.lastAlertTime < 10000) {
+            return; // Skip alert if within cooldown period
+          }
+          
+          const timestamp = Date.now();
+          const alertObj = {
+            type,
+            message,
+            time: timestamp,
+            symbol: AppState.currentSymbol,
+            timeframe: AppState.currentTimeframe,
+            rsi: AppState.currentRSI
+          };
+          
+          AppState.alerts.push(alertObj);
+          AppState.lastAlertTime = now; // Update last alert time
+          
+          // Keep only last 100 alerts
+          if (AppState.alerts.length > 100) {
+            AppState.alerts = AppState.alerts.slice(-100);
+          }
+          
+          SafeStorage.set('heikinAshiRsiAlerts', AppState.alerts);
+          this.render();
+          this.notify(type, message);
+        }, 'Adding alert');
+      }
+      
+      static notify(type, message) {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.enableAlertsCheckbox?.checked) return;
+          
+          // Try to play sound
+          this.playSound(type);
+          
+          // Show browser notification if supported
+          this.showNotification(type, message);
+        }, 'Playing notification');
+      }
+      
+      static playSound(type) {
+        return ErrorHandler.safeExecute(() => {
+          if (!window.AudioContext && !window.webkitAudioContext) return;
+          
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          
+          oscillator.type = 'sine';
+          oscillator.frequency.value = type === 'buy' ? 880 : 440;
+          gainNode.gain.value = 0.3;
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          
+          oscillator.start();
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+          oscillator.stop(ctx.currentTime + 0.3);
+        }, 'Playing alert sound');
+      }
+      
+      static showNotification(type, message) {
+        return ErrorHandler.safeExecute(() => {
+          if (!('Notification' in window)) return;
+          
+          if (Notification.permission === 'granted') {
+            new Notification(`${type.toUpperCase()} RSI+Doji Signal`, {
+              body: message,
+              icon: type === 'buy' ? '🟢' : '🔴'
+            });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+              if (permission === 'granted') {
+                new Notification(`${type.toUpperCase()} RSI+Doji Signal`, {
+                  body: message,
+                  icon: type === 'buy' ? '🟢' : '🔴'
+                });
+              }
+            });
+          }
+        }, 'Showing notification');
+      }
+      
+      static clear() {
+        return ErrorHandler.safeExecute(() => {
+          AppState.alerts = [];
+          SafeStorage.set('heikinAshiRsiAlerts', AppState.alerts);
+          this.render();
+        }, 'Clearing alerts');
+      }
+    }
+
+    // Connection status management
+    class ConnectionManager {
+      static updateStatus(status) {
+        return ErrorHandler.safeExecute(() => {
+          AppState.connectionStatus = status;
+          if (!elements.connectionStatus) return;
+          
+          const statusEl = elements.connectionStatus;
+          const icon = statusEl.querySelector('i');
+          const text = statusEl.querySelector('span');
+          
+          statusEl.className = `status-indicator ${status}`;
+          
+          switch (status) {
+            case 'online':
+              if (icon) icon.className = 'fas fa-wifi';
+              if (text) text.textContent = 'Online';
+              break;
+            case 'offline':
+              if (icon) icon.className = 'fas fa-wifi-slash';
+              if (text) text.textContent = 'Offline';
+              break;
+            case 'loading':
+              if (icon) icon.className = 'fas fa-spinner fa-spin';
+              if (text) text.textContent = 'Loading...';
+              break;
+          }
+        }, 'Updating connection status');
+      }
+      
+      static checkConnection() {
+        return ErrorHandler.safeExecute(() => {
+          if (!navigator.onLine) {
+            this.updateStatus('offline');
+            return false;
+          }
+          
+          // Try a simple fetch to test connection
+          return fetch('https://api.binance.com/api/v3/time', { 
+            method: 'GET',
+            cache: 'no-cache',
+            signal: AbortSignal.timeout(5000)
+          })
+          .then(() => {
+            this.updateStatus('online');
+            return true;
+          })
+          .catch(() => {
+            this.updateStatus('offline');
+            return false;
+          });
+        }, 'Checking connection', Promise.resolve(false));
+      }
+    }
+
+    // Refresh timer management
+    class RefreshManager {
+      static start() {
+        return ErrorHandler.safeExecute(() => {
+          this.stop();
+          this.updateTimer();
+          AppState.refreshInterval = setInterval(() => this.updateTimer(), 1000);
+        }, 'Starting refresh timer');
+      }
+      
+      static stop() {
+        return ErrorHandler.safeExecute(() => {
+          if (AppState.refreshInterval) {
+            clearInterval(AppState.refreshInterval);
+            AppState.refreshInterval = null;
+          }
+        }, 'Stopping refresh timer');
+      }
+      
+      static updateTimer() {
+        return ErrorHandler.safeExecute(() => {
+          if (AppState.isLoading) return;
+          
+          const refreshRate = AppState.timeframeRefreshRates[AppState.currentTimeframe] || 60000;
+          const nextRefresh = AppState.lastRefreshTime + refreshRate;
+          const timeLeft = Math.max(0, nextRefresh - Date.now());
+          
+          const secondsLeft = Math.ceil(timeLeft / 1000);
+          if (elements.nextRefreshEl) {
+            elements.nextRefreshEl.textContent = `${secondsLeft}s`;
+          }
+          
+          if (timeLeft <= 0) {
+            this.refresh();
+          }
+        }, 'Updating refresh timer');
+      }
+      
+      static refresh() {
+        return ErrorHandler.safeExecute(() => {
+          if (AppState.isLoading) return;
+          
+          AppState.lastRefreshTime = Date.now();
+          ChartManager.load(AppState.currentTimeframe);
+        }, 'Refreshing data');
+      }
+    }
+
+    // RSI Display Manager
+    class RSIDisplayManager {
+      static updateRSIDisplay(rsi) {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.rsiValueEl) return;
+          
+          const overboughtLevel = parseFloat(elements.rsiOverboughtInput?.value || 70);
+          const oversoldLevel = parseFloat(elements.rsiOversoldInput?.value || 30);
+          
+          elements.rsiValueEl.textContent = rsi !== null ? rsi.toFixed(1) : '--';
+          
+          // Update RSI color based on levels
+          elements.rsiValueEl.className = 'rsi-value';
+          if (rsi !== null) {
+            if (rsi > overboughtLevel) {
+              elements.rsiValueEl.classList.add('rsi-overbought');
+            } else if (rsi < oversoldLevel) {
+              elements.rsiValueEl.classList.add('rsi-oversold');
+            } else {
+              elements.rsiValueEl.classList.add('rsi-neutral');
+            }
+          } else {
+            elements.rsiValueEl.classList.add('rsi-neutral');
+          }
+          
+          AppState.currentRSI = rsi;
+        }, 'Updating RSI display');
+      }
+    }
+
+    // Chart management
+    class ChartManager {
+      static async load(timeframe) {
+        if (AppState.isLoading) return;
+        
+        AppState.isLoading = true;
+        ConnectionManager.updateStatus('loading');
+        
+        try {
+          // Check connection first
+          const isConnected = await ConnectionManager.checkConnection();
+          if (!isConnected) {
+            ErrorHandler.showError('No internet connection. Using cached data if available.');
+            return;
+          }
+          
+          await this.loadChart(timeframe);
+          ConnectionManager.updateStatus('online');
+        } catch (error) {
+          ErrorHandler.logError('Loading charts', error);
+          ConnectionManager.updateStatus('offline');
+        } finally {
+          AppState.isLoading = false;
+        }
+      }
+      
+      static async loadChart(timeframe) {
+        return ErrorHandler.safeExecuteAsync(async () => {
+          // Clean up existing charts for other timeframes
+          Object.keys(AppState.activeCharts).forEach(tf => {
+            if (tf !== timeframe) {
+              if (AppState.activeCharts[tf]?.wrapper?.remove) {
+                AppState.activeCharts[tf].wrapper.remove();
+              }
+              delete AppState.activeCharts[tf];
+            }
+          });
+          
+          // Update existing chart or create new one
+          if (AppState.activeCharts[timeframe]) {
+            await this.updateExistingChart(timeframe);
+          } else {
+            await this.createNewChart(timeframe);
+          }
+          
+          this.updateMarkers();
+        }, `Loading chart for ${timeframe}`);
+      }
+      
+      static async updateExistingChart(timeframe) {
+        const chartData = AppState.activeCharts[timeframe];
+        if (!chartData) return;
+        
+        const candles = await DataManager.fetchCandles(timeframe);
+        if (!candles || candles.length === 0) return;
+        
+        const haCandles = HeikinAshiCalculator.convert(candles);
+        chartData.haCandles = haCandles;
+        
+        if (chartData.candleSeries) {
+          chartData.candleSeries.setData(haCandles);
+        }
+        
+        // Calculate and update RSI
+        const closePrices = haCandles.map(c => c.close);
+        const rsiLength = parseInt(elements.rsiLengthInput?.value || 7);
+        const rsiSmoothing = parseInt(elements.rsiSmoothingInput?.value || 21);
+        const rsiValues = RSICalculator.calculate(closePrices, rsiLength, rsiSmoothing);
+        
+        AppState.rsiData = rsiValues.map((rsi, index) => ({
+          time: haCandles[haCandles.length - rsiValues.length + index].time,
+          value: rsi
+        }));
+        
+        if (chartData.rsiSeries && AppState.rsiData.length > 0) {
+          chartData.rsiSeries.setData(AppState.rsiData);
+          
+          // Update current RSI display
+          const latestRSI = AppState.rsiData[AppState.rsiData.length - 1];
+          RSIDisplayManager.updateRSIDisplay(latestRSI ? latestRSI.value : null);
+        }
+        
+        // Redetect patterns with RSI
+        const patterns = PatternDetector.detect(haCandles, timeframe, AppState.rsiData);
+        Object.assign(chartData, patterns);
+      }
+      
+      static async createNewChart(timeframe) {
+        const chartElements = this.createChartElements(timeframe);
+        if (!chartElements) return;
+        
+        const { mainChart, rsiChart, candleSeries, rsiSeries, zoneSeries, wrapper } = chartElements;
+        const chartData = { 
+          mainChart, rsiChart, candleSeries, rsiSeries, zoneSeries, wrapper,
+          dojiMarkers: [], wicklessMarkers: [], reversalMarkers: [], rsiDojiMarkers: [], haCandles: [] 
+        };
+        
+        AppState.activeCharts[timeframe] = chartData;
+        
+        const candles = await DataManager.fetchCandles(timeframe);
+        if (!candles || candles.length === 0) return;
+        
+        const haCandles = HeikinAshiCalculator.convert(candles);
+        chartData.haCandles = haCandles;
+        
+        candleSeries.setData(haCandles);
+        
+        // Calculate RSI
+        const closePrices = haCandles.map(c => c.close);
+        const rsiLength = parseInt(elements.rsiLengthInput?.value || 7);
+        const rsiSmoothing = parseInt(elements.rsiSmoothingInput?.value || 21);
+        const rsiValues = RSICalculator.calculate(closePrices, rsiLength, rsiSmoothing);
+        
+        AppState.rsiData = rsiValues.map((rsi, index) => ({
+          time: haCandles[haCandles.length - rsiValues.length + index].time,
+          value: rsi
+        }));
+        
+        if (AppState.rsiData.length > 0) {
+          rsiSeries.setData(AppState.rsiData);
+          
+          // Update current RSI display
+          const latestRSI = AppState.rsiData[AppState.rsiData.length - 1];
+          RSIDisplayManager.updateRSIDisplay(latestRSI ? latestRSI.value : null);
+        }
+        
+        this.drawSupportResistance(haCandles, zoneSeries);
+        this.setupRSILevels(rsiChart);
+        
+        // Detect patterns with RSI
+        const patterns = PatternDetector.detect(haCandles, timeframe, AppState.rsiData);
+        Object.assign(chartData, patterns);
+        
+        this.setupChartInteractions(mainChart, rsiChart, chartData);
+      }
+      
+      static createChartElements(timeframe) {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.chartContainer) return null;
+          
+          const wrapper = document.createElement('div');
+          wrapper.className = 'chart-wrapper';
+          wrapper.id = `chart-${timeframe}`;
+          
+          const title = document.createElement('div');
+          title.className = 'chart-title';
+          title.innerHTML = `<i class="fas fa-chart-candlestick mr-2"></i>${AppState.currentSymbol} ${timeframe} Heikin Ashi`;
+          
+          const rsiTitle = document.createElement('div');
+          rsiTitle.className = 'rsi-title';
+          rsiTitle.innerHTML = `<i class="fas fa-chart-line mr-2"></i>RSI(7) with 21-period smoothing`;
+          
+          const mainChartEl = document.createElement('div');
+          mainChartEl.className = 'chart main-chart';
+          
+          const rsiChartEl = document.createElement('div');
+          rsiChartEl.className = 'chart rsi-chart';
+          
+          wrapper.appendChild(title);
+          wrapper.appendChild(rsiTitle);
+          wrapper.appendChild(mainChartEl);
+          wrapper.appendChild(rsiChartEl);
+          elements.chartContainer.appendChild(wrapper);
+          
+          if (!window.LightweightCharts) {
+            throw new Error('LightweightCharts library not loaded');
+          }
+          
+          const mainChart = LightweightCharts.createChart(mainChartEl, {
+            layout: { 
+              background: { color: '#262626' }, 
+              textColor: '#e5e5e5' 
+            },
+            grid: { 
+              vertLines: { color: '#333' }, 
+              horzLines: { color: '#333' } 
+            },
+            timeScale: { 
+              timeVisible: true,
+              secondsVisible: false
+            },
+            crosshair: { 
+              mode: LightweightCharts.CrosshairMode.Normal 
+            },
+            watermark: {
+              visible: false
+            }
+          });
+          
+          const rsiChart = LightweightCharts.createChart(rsiChartEl, {
+            layout: { 
+              background: { color: '#262626' }, 
+              textColor: '#e5e5e5' 
+            },
+            grid: { 
+              vertLines: { color: '#333' }, 
+              horzLines: { color: '#333' } 
+            },
+            timeScale: { 
+              timeVisible: false,
+              secondsVisible: false
+            },
+            crosshair: { 
+              mode: LightweightCharts.CrosshairMode.Normal 
+            },
+            rightPriceScale: {
+              scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+              },
+              borderVisible: false,
+            },
+            watermark: {
+              visible: false
+            }
+          });
+          
+          // Synchronize time scales
+          mainChart.timeScale().subscribeVisibleTimeRangeChange(() => {
+            const timeRange = mainChart.timeScale().getVisibleRange();
+            if (timeRange) {
+              rsiChart.timeScale().setVisibleRange(timeRange);
+            }
+          });
+          
+          rsiChart.timeScale().subscribeVisibleTimeRangeChange(() => {
+            const timeRange = rsiChart.timeScale().getVisibleRange();
+            if (timeRange) {
+              mainChart.timeScale().setVisibleRange(timeRange);
+            }
+          });
+          
+          const candleSeries = mainChart.addCandlestickSeries({
+            upColor: '#00ff88',
+            downColor: '#ff4444',
+            borderUpColor: '#00ff88',
+            borderDownColor: '#ff4444',
+            wickUpColor: '#00ff88',
+            wickDownColor: '#ff4444'
+          });
+          
+          const zoneSeries = mainChart.addLineSeries({
+            color: 'rgba(255,255,255,0.3)',
+            lineWidth: 1,
+            priceLineVisible: true,
+            crossHairMarkerVisible: false
+          });
+          
+          const rsiSeries = rsiChart.addLineSeries({
+            color: '#ffd43b',
+            lineWidth: 2,
+            priceLineVisible: false,
+            crossHairMarkerVisible: true
+          });
+          
+          return { mainChart, rsiChart, candleSeries, rsiSeries, zoneSeries, wrapper };
+        }, `Creating chart elements for ${timeframe}`);
+      }
+      
+      static setupRSILevels(rsiChart) {
+        return ErrorHandler.safeExecute(() => {
+          if (!rsiChart) return;
+          
+          const overboughtLevel = parseFloat(elements.rsiOverboughtInput?.value || 70);
+          const oversoldLevel = parseFloat(elements.rsiOversoldInput?.value || 30);
+          
+          // Add RSI level lines
+          const rsiSeries = rsiChart.addLineSeries({
+            color: 'transparent',
+            lineWidth: 1,
+            priceLineVisible: false,
+            crossHairMarkerVisible: false
+          });
+          
+          // Overbought line
+          rsiSeries.createPriceLine({
+            price: overboughtLevel,
+            color: '#ff4444',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: 'Overbought'
+          });
+          
+          // Oversold line
+          rsiSeries.createPriceLine({
+            price: oversoldLevel,
+            color: '#00ff88',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: 'Oversold'
+          });
+          
+          // Middle line
+          rsiSeries.createPriceLine({
+            price: 50,
+            color: '#666',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: false,
+            title: 'Midline'
+          });
+        }, 'Setting up RSI levels');
+      }
+      
+      static setupChartInteractions(mainChart, rsiChart, chartData) {
+        return ErrorHandler.safeExecute(() => {
+          if (!mainChart || !elements.tooltipEl) return;
+          
+          mainChart.subscribeCrosshairMove(param => {
+            ErrorHandler.safeExecute(() => {
+              if (!param.point || !param.time) {
+                elements.tooltipEl.style.display = 'none';
+                return;
+              }
+              
+              const allMarkers = [
+                ...(chartData.dojiMarkers || []),
+                ...(chartData.wicklessMarkers || []),
+                ...(chartData.reversalMarkers || []),
+                ...(chartData.rsiDojiMarkers || [])
+              ];
+              
+              const marker = allMarkers.find(m => m.time === param.time);
+              if (marker) {
+                // Find corresponding RSI value
+                const rsiData = AppState.rsiData.find(r => r.time === param.time);
+                const rsiText = rsiData ? ` (RSI: ${rsiData.value.toFixed(1)})` : '';
+                
+                elements.tooltipEl.innerHTML = `
+                  <div class="font-bold">${marker.text}${rsiText}</div>
+                  <div class="text-xs opacity-75">Time: ${new Date(param.time * 1000).toLocaleString()}</div>
+                `;
+                elements.tooltipEl.style.left = `${param.point.x + 10}px`;
+                elements.tooltipEl.style.top = `${param.point.y - 50}px`;
+                elements.tooltipEl.style.display = 'block';
+              } else {
+                elements.tooltipEl.style.display = 'none';
+              }
+            }, 'Chart crosshair move handler');
+          });
+        }, 'Setting up chart interactions');
+      }
+      
+      static drawSupportResistance(haCandles, zoneSeries) {
+        return ErrorHandler.safeExecute(() => {
+          if (!haCandles || haCandles.length < 3 || !zoneSeries) return;
+          
+          const levels = [];
+          for (let i = 2; i < haCandles.length; i++) {
+            const a = haCandles[i - 2];
+            const b = haCandles[i - 1];
+            const c = haCandles[i];
+            
+            if (!a || !b || !c) continue;
+            
+            // Local minima
+            if (b.low < a.low && b.low < c.low) {
+              levels.push(b.low);
+            }
+            // Local maxima
+            if (b.high > a.high && b.high > c.high) {
+              levels.push(b.high);
+            }
+          }
+          
+          // Remove duplicate levels and create price lines
+          const uniqueLevels = [...new Set(levels.map(l => parseFloat(l.toFixed(2))))];
+          uniqueLevels.slice(0, 10).forEach(level => { // Limit to 10 levels
+            zoneSeries.createPriceLine({
+              price: level,
+              color: 'rgba(255,255,255,0.3)',
+              lineWidth: 1,
+              lineStyle: LightweightCharts.LineStyle.Dashed,
+              axisLabelVisible: true,
+              title: 'S/R'
+            });
+          });
+        }, 'Drawing support/resistance levels');
+      }
+      
+      static updateMarkers() {
+        return ErrorHandler.safeExecute(() => {
+          const selectedPatterns = this.getSelectedPatterns();
+          
+          Object.values(AppState.activeCharts).forEach(chartData => {
+            if (!chartData.candleSeries) return;
+            
+            const markers = [];
+            if (selectedPatterns.includes('doji')) {
+              markers.push(...(chartData.dojiMarkers || []));
+              markers.push(...(chartData.rsiDojiMarkers || []));
+            }
+            if (selectedPatterns.includes('wickless')) markers.push(...(chartData.wicklessMarkers || []));
+            if (selectedPatterns.includes('reversal')) markers.push(...(chartData.reversalMarkers || []));
+            
+            chartData.candleSeries.setMarkers(markers);
+            
+            if (chartData.zoneSeries) {
+              chartData.zoneSeries.applyOptions({ 
+                visible: selectedPatterns.includes('zones') 
+              });
+            }
+          });
+        }, 'Updating chart markers');
+      }
+      
+      static getSelectedPatterns() {
+        return ErrorHandler.safeExecute(() => {
+          if (!elements.patternSelect) return [];
+          return Array.from(elements.patternSelect.selectedOptions).map(opt => opt.value);
+        }, 'Getting selected patterns', []);
+      }
+    }
+
+    // Data fetching
+    class DataManager {
+      static async fetchCandles(timeframe) {
+        return ErrorHandler.safeExecuteAsync(async () => {
+          const intervalMap = {
+            '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+            '1h': '1h', '4h': '4h', '1d': '1d'
+          };
+          
+          const interval = intervalMap[timeframe] || '15m';
+          const url = `https://api.binance.com/api/v3/klines?symbol=${AppState.currentSymbol}&interval=${interval}&limit=500`;
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch(url, { 
+            signal: controller.signal,
+            cache: 'no-cache'
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          if (!Array.isArray(data)) {
+            throw new Error('Invalid data format received');
+          }
+          
+          return data.map(d => {
+            try {
+              return {
+                time: Math.floor(parseInt(d[0]) / 1000),
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4]),
+                volume: parseFloat(d[5])
+              };
+            } catch (e) {
+              ErrorHandler.logError('Parsing candle data', e);
+              return null;
+            }
+          }).filter(candle => candle !== null);
+        }, `Fetching ${timeframe} candles for ${AppState.currentSymbol}`, []);
+      }
+    }
+
+    // Heikin Ashi calculation
+    class HeikinAshiCalculator {
+      static convert(candles) {
+        return ErrorHandler.safeExecute(() => {
+          if (!candles || candles.length === 0) return [];
+          
+          const haCandles = [];
+          const first = candles[0];
+          
+          if (!first) return [];
+          
+          // First HA candle
+          haCandles.push({
+            time: first.time,
+            open: (first.open + first.close) / 2,
+            high: first.high,
+            low: first.low,
+            close: (first.open + first.close + first.high + first.low) / 4,
+            volume: first.volume
+          });
+          
+          // Subsequent candles
+          for (let i = 1; i < candles.length; i++) {
+            const curr = candles[i];
+            const prevHA = haCandles[i-1];
+            
+            if (!curr || !prevHA) continue;
+            
+            const haOpen = (prevHA.open + prevHA.close) / 2;
+            const haClose = (curr.open + curr.close + curr.high + curr.low) / 4;
+            const haHigh = Math.max(curr.high, haOpen, haClose);
+            const haLow = Math.min(curr.low, haOpen, haClose);
+            
+            haCandles.push({
+              time: curr.time,
+              open: haOpen,
+              high: haHigh,
+              low: haLow,
+              close: haClose,
+              volume: curr.volume
+            });
+          }
+          
+          return haCandles;
+        }, 'Converting to Heikin Ashi', []);
+      }
+    }
+
+    // Enhanced Pattern detection with RSI
+    class PatternDetector {
+      static detect(haCandles, timeframe, rsiData = []) {
+        return ErrorHandler.safeExecute(() => {
+          if (!haCandles || haCandles.length < 5) {
+            return { dojiMarkers: [], wicklessMarkers: [], reversalMarkers: [], rsiDojiMarkers: [] };
+          }
+          
+          const dojiMarkers = [];
+          const wicklessMarkers = [];
+          const reversalMarkers = [];
+          const rsiDojiMarkers = [];
+          const volThreshold = this.getVolumeThreshold();
+          
+          for (let i = 2; i < haCandles.length - 1; i++) {
+            try {
+              const curr = haCandles[i];
+              if (!curr || curr.volume < volThreshold) continue;
+              
+              // Get corresponding RSI value
+              const rsiValue = this.getRSIForTime(curr.time, rsiData);
+              
+              // Detect patterns
+              this.detectDoji(haCandles, i, timeframe, dojiMarkers, reversalMarkers, rsiValue, rsiDojiMarkers);
+              this.detectWickless(haCandles, i, timeframe, wicklessMarkers);
+              this.detectTrendReversal(haCandles, i, timeframe, reversalMarkers);
+            } catch (error) {
+              ErrorHandler.logError(`Pattern detection at index ${i}`, error);
+            }
+          }
+          
+          return { dojiMarkers, wicklessMarkers, reversalMarkers, rsiDojiMarkers };
+        }, `Detecting patterns for ${timeframe}`, { dojiMarkers: [], wicklessMarkers: [], reversalMarkers: [], rsiDojiMarkers: [] });
+      }
+      
+      static getRSIForTime(time, rsiData) {
+        if (!rsiData || rsiData.length === 0) return null;
+        const rsiPoint = rsiData.find(r => r.time === time);
+        return rsiPoint ? rsiPoint.value : null;
+      }
+      
+      static detectDoji(haCandles, index, timeframe, dojiMarkers, reversalMarkers, rsiValue, rsiDojiMarkers) {
+        const curr = haCandles[index];
+        if (!curr) return;
+        
+        const bodySize = Math.abs(curr.close - curr.open);
+        const totalRange = curr.high - curr.low;
+        
+        if (totalRange === 0) return;
+        
+        // Doji: small body relative to range
+        if (bodySize < totalRange * 0.15) {
+          const dojiColor = curr.close > curr.open ? 'green' : 'red';
+          
+          // Regular doji marker
+          dojiMarkers.push({
+            time: curr.time,
+            position: 'aboveBar',
+            color: dojiColor === 'green' ? '#44ff44' : '#ff4444',
+            shape: 'circle',
+            text: `${timeframe} ${dojiColor} Doji`
+          });
+          
+          // Check for RSI + Doji signal (only generate alerts for these)
+          if (rsiValue !== null) {
+            const overboughtLevel = parseFloat(elements.rsiOverboughtInput?.value || 70);
+            const oversoldLevel = parseFloat(elements.rsiOversoldInput?.value || 30);
+            
+            const isOverbought = RSICalculator.isOverbought(rsiValue, overboughtLevel);
+            const isOversold = RSICalculator.isOversold(rsiValue, oversoldLevel);
+            
+            // RSI + Doji signals
+            if ((isOversold && dojiColor === 'green') || (isOverbought && dojiColor === 'red')) {
+              rsiDojiMarkers.push({
+                time: curr.time,
+                position: dojiColor === 'green' ? 'belowBar' : 'aboveBar',
+                color: '#ffd700',
+                shape: dojiColor === 'green' ? 'arrowUp' : 'arrowDown',
+                text: `RSI+Doji Signal: ${isOversold ? 'Bullish' : 'Bearish'} (RSI: ${rsiValue.toFixed(1)})`
+              });
+              
+              // Generate alert only for RSI + Doji combinations
+              const alertType = isOversold ? 'buy' : 'sell';
+              const direction = isOversold ? 'Bullish' : 'Bearish';
+              const alertMessage = `${AppState.currentSymbol} ${timeframe}: ${direction} RSI+Doji Signal (RSI: ${rsiValue.toFixed(1)}, ${dojiColor} Doji)`;
+              AlertManager.add(alertType, alertMessage);
+            }
+          }
+          
+          // Check for reversal potential (non-RSI based, no alerts)
+          if (index > 3) {
+            const trend = this.detectTrend(haCandles.slice(0, index), 4);
+            if ((trend === 'up' && dojiColor === 'red') || (trend === 'down' && dojiColor === 'green')) {
+              reversalMarkers.push({
+                time: curr.time,
+                position: dojiColor === 'green' ? 'belowBar' : 'aboveBar',
+                color: '#ffff00',
+                shape: dojiColor === 'green' ? 'arrowUp' : 'arrowDown',
+                text: `Potential ${trend === 'up' ? 'Bearish' : 'Bullish'} Reversal`
+              });
+              
+              // No alert generation for regular reversals - only RSI+Doji
+            }
+          }
+        }
+      }
+      
+      static detectWickless(haCandles, index, timeframe, wicklessMarkers) {
+        const curr = haCandles[index];
+        const prev = haCandles[index - 1];
+        if (!curr || !prev) return;
+        
+        const upperWick = curr.high - Math.max(curr.open, curr.close);
+        const lowerWick = Math.min(curr.open, curr.close) - curr.low;
+        const prevUpperWick = prev.high - Math.max(prev.open, prev.close);
+        const prevLowerWick = Math.min(prev.open, prev.close) - prev.low;
+        
+        // First wickless candle detection
+        if ((upperWick === 0 && prevUpperWick > 0) || (lowerWick === 0 && prevLowerWick > 0)) {
+          const wicklessType = upperWick === 0 ? 'Upper' : 'Lower';
+          wicklessMarkers.push({
+            time: curr.time,
+            position: upperWick === 0 ? 'aboveBar' : 'belowBar',
+            color: '#ff9900',
+            shape: upperWick === 0 ? 'arrowDown' : 'arrowUp',
+            text: `First ${wicklessType} Wickless`
+          });
+          
+          // No alerts for wickless candles in RSI mode
+        }
+      }
+      
+      static detectTrendReversal(haCandles, index, timeframe, reversalMarkers) {
+        if (index < 5) return;
+        
+        const curr = haCandles[index];
+        const prev = haCandles[index - 1];
+        if (!curr || !prev) return;
+        
+        const trend = this.detectTrend(haCandles.slice(0, index), 5);
+        const currColor = curr.close > curr.open ? 'green' : 'red';
+        const prevColor = prev.close > prev.open ? 'green' : 'red';
+        
+        // Color change after strong trend
+        if (trend !== 'neutral' && prevColor !== currColor) {
+          const trendStrength = this.getTrendStrength(haCandles.slice(Math.max(0, index - 5), index), 5);
+          
+          if (trendStrength > 0.6) {
+            reversalMarkers.push({
+              time: curr.time,
+              position: currColor === 'green' ? 'belowBar' : 'aboveBar',
+              color: '#ffff00',
+              shape: currColor === 'green' ? 'arrowUp' : 'arrowDown',
+              text: `Possible ${currColor === 'green' ? 'Bullish' : 'Bearish'} Reversal`
+            });
+            
+            // No alerts for trend reversals in RSI mode - only RSI+Doji
+          }
+        }
+      }
+      
+      static detectTrend(candles, lookback) {
+        if (!candles || candles.length < lookback) return 'neutral';
+        
+        const slice = candles.slice(-lookback);
+        const greens = slice.filter(c => c && c.close > c.open).length;
+        const reds = slice.filter(c => c && c.close < c.open).length;
+        
+        if (greens >= lookback * 0.7) return 'up';
+        if (reds >= lookback * 0.7) return 'down';
+        return 'neutral';
+      }
+      
+      static getTrendStrength(candles, lookback) {
+        if (!candles || candles.length < lookback) return 0;
+        
+        const slice = candles.slice(-lookback);
+        let bodySum = 0;
+        let rangeSum = 0;
+        
+        for (const candle of slice) {
+          if (!candle) continue;
+          bodySum += Math.abs(candle.close - candle.open);
+          rangeSum += candle.high - candle.low;
+        }
+        
+        return rangeSum === 0 ? 0 : bodySum / rangeSum;
+      }
+      
+      static getVolumeThreshold() {
+        return ErrorHandler.safeExecute(() => {
+          return parseInt(elements.volumeFilterInput?.value || '0');
+        }, 'Getting volume threshold', 0);
+      }
+    }
+
+    // Event listeners setup
+    function setupEventListeners() {
+      // Volume filter
+      if (elements.volumeFilterInput && elements.volumeDisplay) {
+        SafeDOM.addEventListener(elements.volumeFilterInput, 'input', () => {
+          elements.volumeDisplay.textContent = elements.volumeFilterInput.value;
+          ChartManager.updateMarkers();
+        });
+      }
+      
+      // RSI settings
+      ['rsi-length', 'rsi-smoothing', 'rsi-overbought', 'rsi-oversold'].forEach(id => {
+        const element = SafeDOM.getElementById(id);
+        if (element) {
+          SafeDOM.addEventListener(element, 'change', () => {
+            ChartManager.load(AppState.currentTimeframe);
+          });
+        }
+      });
+      
+      // Timeframe buttons
+      const timeframeButtons = SafeDOM.querySelectorAll('.timeframe-btn');
+      timeframeButtons.forEach(btn => {
+        SafeDOM.addEventListener(btn, 'click', () => {
+          timeframeButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          AppState.currentTimeframe = btn.dataset.tf;
+          ChartManager.load(AppState.currentTimeframe);
+          RefreshManager.start();
+        });
+      });
+      
+      // Crypto selector
+      if (elements.cryptoSelect) {
+        SafeDOM.addEventListener(elements.cryptoSelect, 'change', () => {
+          AppState.currentSymbol = elements.cryptoSelect.value;
+          ChartManager.load(AppState.currentTimeframe);
+        });
+      }
+      
+      // Pattern selector
+      if (elements.patternSelect) {
+        SafeDOM.addEventListener(elements.patternSelect, 'change', () => {
+          ChartManager.updateMarkers();
+        });
+      }
+      
+      // Clear alerts button
+      if (elements.clearAlertsBtn) {
+        SafeDOM.addEventListener(elements.clearAlertsBtn, 'click', () => {
+          AlertManager.clear();
+        });
+      }
+      
+      // Other controls
+      ['enable-alerts', 'volume-filter'].forEach(id => {
+        const element = SafeDOM.getElementById(id);
+        if (element) {
+          SafeDOM.addEventListener(element, 'change', () => {
+            ChartManager.updateMarkers();
+          });
+        }
+      });
+      
+      // Window events
+      SafeDOM.addEventListener(window, 'online', () => {
+        ConnectionManager.updateStatus('online');
+        ChartManager.load(AppState.currentTimeframe);
+      });
+      
+      SafeDOM.addEventListener(window, 'offline', () => {
+        ConnectionManager.updateStatus('offline');
+      });
+      
+      // Cleanup on page unload
+      SafeDOM.addEventListener(window, 'beforeunload', () => {
+        RefreshManager.stop();
+      });
+    }
+
+    // Initialize application
+    async function initializeApp() {
+      try {
+        // Set initial volume display
+        if (elements.volumeDisplay && elements.volumeFilterInput) {
+          elements.volumeDisplay.textContent = elements.volumeFilterInput.value;
+        }
+        
+        // Render existing alerts
+        AlertManager.render();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Check initial connection
+        await ConnectionManager.checkConnection();
+        
+        // Load initial chart
+        await ChartManager.load(AppState.currentTimeframe);
+        
+        // Start refresh timer
+        RefreshManager.start();
+        
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+        
+        console.log('Enhanced Heikin Ashi RSI Crypto Trader initialized successfully');
+      } catch (error) {
+        ErrorHandler.logError('Application initialization', error);
+      }
+    }
+
+    // Start the application when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+      initializeApp();
+    }
+  </script>
+</body>
+</html>
