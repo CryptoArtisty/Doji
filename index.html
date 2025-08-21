@@ -496,8 +496,8 @@
           <div>
             <h4 class="font-bold mb-2">RSI+Doji Strategy</h4>
             <ul class="list-disc list-inside space-y-1 text-sm">
-              <li><span class="pattern-highlight rsi-signal">RSI Oversold + Green Doji</span>: Strong bullish reversal signal (RSI < 30)</li>
-              <li><span class="pattern-highlight rsi-signal">RSI Overbought + Red Doji</span>: Strong bearish reversal signal (RSI > 70)</li>
+              <li><span class="pattern-highlight rsi-signal">RSI Oversold + Green Doji</span>: Strong BUY signal (RSI < 30)</li>
+              <li><span class="pattern-highlight rsi-signal">RSI Overbought + Red Doji</span>: Strong SELL signal (RSI > 70)</li>
               <li>RSI(7) with 21-period smoothing for optimal signal quality</li>
               <li>Alerts only trigger when BOTH conditions are met simultaneously</li>
             </ul>
@@ -1595,7 +1595,7 @@
                 position: dojiColor === 'green' ? 'belowBar' : 'aboveBar',
                 color: '#ffff00',
                 shape: dojiColor === 'green' ? 'arrowUp' : 'arrowDown',
-                text: `Potential ${trend === 'up' ? 'Bearish' : 'Bullish'} Reversal`
+                text: `Check for ${trend === 'up' ? 'Bearish' : 'Bullish'} RSI`
               });
               
               // No alert generation for regular reversals - only RSI+Doji
@@ -1650,7 +1650,7 @@
               position: currColor === 'green' ? 'belowBar' : 'aboveBar',
               color: '#ffff00',
               shape: currColor === 'green' ? 'arrowUp' : 'arrowDown',
-              text: `Possible ${currColor === 'green' ? 'Bullish' : 'Bearish'} Reversal`
+              text: `Check for ${currColor === 'green' ? 'Bullish' : 'Bearish'} RSI`
             });
             
             // No alerts for trend reversals in RSI mode - only RSI+Doji
