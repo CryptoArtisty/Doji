@@ -1,0 +1,2 @@
+# Doji
+Rsi and heikin 
